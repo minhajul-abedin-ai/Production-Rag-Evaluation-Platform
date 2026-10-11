@@ -26,6 +26,10 @@ jobs:
       - name: Run tests
         run: pytest
 
+      - name: Run benchmark smoke test
+        run: |
+          python -m rag_eval.engine             --documents data/sample_documents.json             --benchmark data/benchmark.json
+
       - name: Compile source
         run: python -m compileall src tests
 
