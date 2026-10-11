@@ -1,0 +1,27 @@
+[
+  {
+    "doc_id": "rag-overview",
+    "text": "Retrieval-Augmented Generation, commonly called RAG, combines information retrieval with a generation step. A retriever selects relevant evidence from an external knowledge collection before an answer is produced. This can improve factual grounding because the answer can be based on retrieved context rather than model memory alone.",
+    "metadata": {"topic": "rag", "type": "overview"}
+  },
+  {
+    "doc_id": "retrieval-evaluation",
+    "text": "Retrieval quality can be evaluated with metrics such as Recall at K, Precision at K and Mean Reciprocal Rank. Recall at K measures how many relevant items appear in the top K results. Precision at K measures how much of the retrieved set is relevant. Reciprocal rank rewards systems that place the first relevant result near the top.",
+    "metadata": {"topic": "evaluation", "type": "metrics"}
+  },
+  {
+    "doc_id": "rag-guardrails",
+    "text": "RAG applications should treat user input and retrieved documents as untrusted data. Prompt injection attempts may ask a system to ignore previous instructions or reveal hidden prompts. Guardrails, access controls and careful tool permissions reduce the risk of malicious instructions changing system behaviour.",
+    "metadata": {"topic": "security", "type": "guardrails"}
+  },
+  {
+    "doc_id": "xai-overview",
+    "text": "Explainable AI methods help people understand model behaviour. SHAP assigns feature contributions to predictions and can be used for global and local explanations. Explainability is distinct from RAG evaluation, although both support trustworthy AI engineering.",
+    "metadata": {"topic": "xai", "type": "overview"}
+  },
+  {
+    "doc_id": "ml-deployment",
+    "text": "Production machine learning systems need more than a trained model. Testing, API design, containerisation, monitoring, versioning and reproducible deployment help turn experiments into reliable services.",
+    "metadata": {"topic": "mlops", "type": "engineering"}
+  }
+]
