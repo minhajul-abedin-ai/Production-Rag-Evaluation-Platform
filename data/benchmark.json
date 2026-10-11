@@ -1,0 +1,20 @@
+[
+  {
+    "question": "What does Retrieval-Augmented Generation combine?",
+    "relevant_doc_ids": ["rag-overview"],
+    "expected_answer": "Retrieval-Augmented Generation combines information retrieval with generation.",
+    "top_k": 3
+  },
+  {
+    "question": "Which metrics can evaluate retrieval quality?",
+    "relevant_doc_ids": ["retrieval-evaluation"],
+    "expected_answer": "Recall at K, Precision at K and Mean Reciprocal Rank.",
+    "top_k": 3
+  },
+  {
+    "question": "How should RAG systems handle prompt injection?",
+    "relevant_doc_ids": ["rag-guardrails"],
+    "expected_answer": "Treat input as untrusted data and apply guardrails and access controls.",
+    "top_k": 3
+  }
+]
