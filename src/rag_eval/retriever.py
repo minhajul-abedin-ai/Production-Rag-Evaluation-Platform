@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 import numpy as np
@@ -8,6 +9,22 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from .chunking import Chunk
 from .models import SourceChunk
+
+
+_QUERY_EXPANSIONS = {
+    "rag": "retrieval augmented generation",
+    "xai": "explainable artificial intelligence",
+    "mrr": "mean reciprocal rank",
+}
+
+
+def _expand_query(query: str) -> str:
+    """Expand common AI acronyms while preserving the original query terms."""
+    expanded = query
+    for acronym, phrase in _QUERY_EXPANSIONS.items():
+        if re.search(rf"\b{re.escape(acronym)}\b", query, flags=re.IGNORECASE):
+            expanded = f"{expanded} {phrase}"
+    return expanded
 
 
 @dataclass
@@ -49,7 +66,8 @@ class TfidfRetriever:
         if not self._index or not query.strip():
             return []
 
-        query_vector = self._index.vectorizer.transform([query])
+        normalized_query = _expand_query(query)
+        query_vector = self._index.vectorizer.transform([normalized_query])
         scores = cosine_similarity(query_vector, self._index.matrix).ravel()
         top_indices = np.argsort(scores)[::-1][:top_k]
 
