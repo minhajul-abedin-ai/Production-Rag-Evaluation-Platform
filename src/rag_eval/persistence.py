@@ -29,7 +29,7 @@ class SQLiteDocumentStore:
                 pass
             else:
                 os.close(fd)
-            info = path.stat()
+            info = path.lstat()
             if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077:
                 raise ValueError("SQLite file must be regular and owner-only (chmod 600)")
         self.path = path
