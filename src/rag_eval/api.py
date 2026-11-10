@@ -19,6 +19,7 @@ from .models import (
 )
 from .persistence import SQLiteDocumentStore
 from .security import require_tenant
+from .request_limits import BodySizeLimitMiddleware
 
 
 @dataclass
@@ -82,6 +83,7 @@ app = FastAPI(
     version="0.3.0",
     description="Authenticated, bounded single-process tenant RAG baseline.",
 )
+app.add_middleware(BodySizeLimitMiddleware)
 app.state.store = TenantStore()
 app.state.limiter = SlidingWindowLimiter()
 
