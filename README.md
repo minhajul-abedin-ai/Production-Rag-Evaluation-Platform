@@ -159,6 +159,12 @@ The demo enforces **120 authenticated requests per tenant per rolling minute** (
 
 **Deployment limits:** SQLite contains unencrypted user content, so use encrypted storage and strict file/volume permissions. SQLite persistence and the limiter are **single-process only**; do not run multiple workers sharing this file or rely on limiter state across replicas. This does not implement durable distributed rate limits, retries, an identity provider, per-IP login throttling, storage backups, GDPR retention/deletion workflows, slow-client timeouts, tamper-resistant audit logs or a security certification. Protect API traffic using TLS and a properly configured ingress proxy. Add integration, load, resilience and penetration testing before any public production use.
 
+## Tenant document deletion
+
+The authenticated API supports **`DELETE /documents/{doc_id}`** for one document and **`DELETE /documents`** to clear all documents belonging to the bearer token's tenant (HTTP 204). A missing document returns 404. A tenant cannot remove another tenant's documents, even if the document ID is the same. Both endpoints persist the updated tenant index when `RAG_STORAGE_PATH` is enabled, and preserve the live index if the storage write fails.
+
+Deletion removes rows from the active SQLite database but **is not secure forensic erasure**: backups, snapshots, WAL/journal remnants and filesystem data recovery require separate retention controls. Never claim certified data deletion without a documented storage lifecycle and independent verification.
+
 ## Example API flow
 
 ### Add documents
