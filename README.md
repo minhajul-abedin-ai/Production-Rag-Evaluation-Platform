@@ -26,7 +26,8 @@ The platform provides:
 - retrieval evaluation with Recall@K, Precision@K and MRR;
 - groundedness and context-coverage diagnostics;
 - FastAPI endpoints protected by bearer API keys; 
-- separate per-tenant in-memory indexes (no cross-tenant document retrieval);
+- separate per-tenant indexes with optional durable SQLite storage (no cross-tenant document retrieval);
+- per-tenant document quotas and in-process rate limiting;
 - automated tests and CI;
 - Docker deployment.
 
@@ -93,6 +94,8 @@ The evaluation module measures:
 │       ├── evaluation.py
 │       ├── guardrails.py
 │       ├── security.py
+│       ├── persistence.py
+│       ├── limits.py
 │       ├── models.py
 │       └── retriever.py
 ├── tests/
@@ -132,6 +135,28 @@ Generate actual keys with `python -c 'import secrets; print(secrets.token_urlsaf
 Each tenant receives a distinct in-memory document index. Even identical document IDs are isolated across tenants. Configuration and index creation are synchronized, and operations on the same tenant are serialized to avoid interleaved writes. No user-selected tenant header is trusted.
 
 **Important limits:** This remains a single-process educational server, not a fully production-ready multi-tenant SaaS. Data are lost on restart and are not shared between workers. The static JSON key map requires manual rotation; there is no identity provider, quotas/rate limiting, persisted storage, auditable access control or enterprise authorization. Behind a production gateway, add resource limits, monitoring, persistent tenant-scoped storage and key rotation before serving external customers. The public docs UI is not protected against viewing endpoint schemas, but data endpoints require authentication.
+
+## Durable storage, quotas, and credential rotation
+
+The service now supports **optional tenant-scoped SQLite persistence**. By default, `RAG_STORAGE_PATH` is unset and data remain **ephemeral** for the free local demo. Set an absolute path to persist documents and rebuild each tenant's retrieval index on restart:
+
+```bash
+mkdir -p .rag-data .rag-secrets
+chmod 700 .rag-data .rag-secrets
+export RAG_STORAGE_PATH="$(pwd)/.rag-data/documents.sqlite3"
+# Use your own unique, random 32+-character token for each tenant.
+python -c 'import secrets; print(secrets.token_urlsafe(32))'
+# Store the JSON mapping {"demo": "<generated token>"} in .rag-secrets/keys.json
+chmod 600 .rag-secrets/keys.json
+export RAG_API_KEYS_FILE="$(pwd)/.rag-secrets/keys.json"
+uvicorn rag_eval.api:app --app-dir src --host 127.0.0.1 --port 8000
+```
+
+`RAG_API_KEYS_FILE` takes precedence over `RAG_API_KEYS_JSON`. Replacing the private JSON file atomically permits key rotation: prior keys stop authenticating on the next request; tenant IDs remain stable, so indexed content stays with its tenant. Use a real secret manager for distributed deployments. Do not commit JSON credential maps or SQLite databases. Keys are compared in constant time where practical, but this is not comprehensive identity management.
+
+The demo enforces **120 authenticated requests per tenant per rolling minute** (HTTP 429 and `Retry-After` on excess), **200 stored documents per tenant**, **2 MB of serialized documents per tenant**, **20 documents per ingest request**, **20,000 characters per document** and **50 evaluation cases per request**. Failed quota or validation checks do not replace the live index or committed rows. Disk errors do not publish an in-memory update.
+
+**Deployment limits:** SQLite contains unencrypted user content, so use encrypted storage and strict file/volume permissions. SQLite persistence and the limiter are **single-process only**; do not run multiple workers sharing this file or rely on limiter state across replicas. This does not implement durable distributed rate limits, retries, an identity provider, per-IP login throttling, storage backups, GDPR retention/deletion workflows, request-body transport caps, tamper-resistant audit logs or a security certification. Protect API traffic using TLS and a properly configured ingress proxy. Add integration, load, resilience and penetration testing before any public production use.
 
 ## Example API flow
 
