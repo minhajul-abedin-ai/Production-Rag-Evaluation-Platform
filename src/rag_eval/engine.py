@@ -34,15 +34,24 @@ class RAGEngine:
         return len(self._documents)
 
     def ingest(self, documents: list[Document]) -> int:
+        # Rebuild into temporary objects first. Invalid content must not
+        # corrupt the documents/index currently serving queries.
+        candidate_documents = dict(self._documents)
         for document in documents:
-            self._documents[document.doc_id] = document
+            candidate_documents[document.doc_id] = document
 
         chunks = chunk_documents(
-            list(self._documents.values()),
+            list(candidate_documents.values()),
             max_words=self.max_chunk_words,
             overlap_words=self.overlap_words,
         )
-        self.retriever.fit(chunks)
+        candidate_retriever = TfidfRetriever()
+        try:
+            candidate_retriever.fit(chunks)
+        except ValueError as exc:
+            raise ValueError("Documents contain no indexable terms.") from exc
+        self._documents = candidate_documents
+        self.retriever = candidate_retriever
         return len(chunks)
 
     def query(self, question: str, top_k: int = 3) -> QueryResponse:

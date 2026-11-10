@@ -46,3 +46,12 @@ def test_document_ingest_and_query():
     )
     assert query.status_code == 200
     assert query.json()["sources"][0]["doc_id"] == "rag"
+
+
+def test_stopwords_only_document_returns_422_not_500():
+    test_client = client()
+    response = test_client.post("/documents", json={
+        "documents": [{"doc_id": "words", "text": "the and or"}]
+    })
+    assert response.status_code == 422
+    assert test_client.get("/health").json()["documents"] == 0

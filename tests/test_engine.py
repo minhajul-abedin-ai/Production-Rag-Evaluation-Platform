@@ -43,3 +43,26 @@ def test_unknown_question_has_safe_fallback():
 
     assert isinstance(response.answer, str)
     assert response.answer
+
+
+def test_stopwords_only_ingest_preserves_existing_index():
+    import pytest
+
+    engine = build_engine()
+    previous_documents = engine.document_count
+    previous_chunks = engine.retriever.indexed_chunks
+    with pytest.raises(ValueError, match="no indexable terms"):
+        engine.ingest([Document(doc_id="rag", text="the and or but") , Document(doc_id="xai", text="the and")])
+    assert engine.document_count == previous_documents
+    assert engine.retriever.indexed_chunks == previous_chunks
+    assert engine.query("What does RAG combine?").sources[0].doc_id == "rag"
+
+
+def test_empty_vocabulary_on_first_ingest_does_not_save_document():
+    import pytest
+
+    engine = RAGEngine()
+    with pytest.raises(ValueError, match="no indexable terms"):
+        engine.ingest([Document(doc_id="stopwords", text="the and or")])
+    assert engine.document_count == 0
+    assert engine.retriever.indexed_chunks == 0
