@@ -7,3 +7,12 @@ dist/
 build/
 *.egg-info/
 .env
+
+# Local documents and credential files (never commit)
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+.rag-secrets/
+.rag-data/
