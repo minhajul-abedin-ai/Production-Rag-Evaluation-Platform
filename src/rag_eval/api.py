@@ -50,6 +50,29 @@ class TenantStore:
                 self._tenants[tenant] = TenantState(engine=engine)
             return self._tenants[tenant]
 
+    def delete(self, tenant: str, doc_id: str | None = None) -> None:
+        """Delete one document or all tenant documents, without touching other tenants."""
+        state = self.get(tenant)
+        with state.lock:
+            candidate_docs = dict(state.engine._documents)
+            if doc_id is not None:
+                if doc_id not in candidate_docs:
+                    raise HTTPException(status_code=404, detail="Document not found")
+                del candidate_docs[doc_id]
+            else:
+                candidate_docs.clear()
+
+            candidate_engine = RAGEngine(
+                max_chunk_words=state.engine.max_chunk_words,
+                overlap_words=state.engine.overlap_words,
+            )
+            if candidate_docs:
+                candidate_engine.ingest(list(candidate_docs.values()))
+            # Persist first so failed disk writes cannot publish a different index.
+            if self._storage:
+                self._storage.replace(tenant, list(candidate_docs.values()))
+            state.engine = candidate_engine
+
     def ingest(self, tenant: str, documents: list[Document]) -> dict[str, int]:
         state = self.get(tenant)
         with state.lock:
@@ -126,3 +149,13 @@ def evaluate(
         if state.engine.document_count == 0:
             raise HTTPException(status_code=409, detail="No documents are indexed. Add documents first.")
         return state.engine.evaluate(request.cases)
+
+
+@app.delete("/documents/{doc_id}", status_code=204)
+def delete_document(doc_id: str, tenant: str = Depends(require_tenant)) -> None:
+    app.state.store.delete(tenant, doc_id)
+
+
+@app.delete("/documents", status_code=204)
+def delete_all_documents(tenant: str = Depends(require_tenant)) -> None:
+    app.state.store.delete(tenant)
