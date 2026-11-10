@@ -96,6 +96,7 @@ The evaluation module measures:
 │       ├── security.py
 │       ├── persistence.py
 │       ├── limits.py
+│       ├── request_limits.py
 │       ├── models.py
 │       └── retriever.py
 ├── tests/
@@ -154,9 +155,9 @@ uvicorn rag_eval.api:app --app-dir src --host 127.0.0.1 --port 8000
 
 `RAG_API_KEYS_FILE` takes precedence over `RAG_API_KEYS_JSON`. Replacing the private JSON file atomically permits key rotation: prior keys stop authenticating on the next request; tenant IDs remain stable, so indexed content stays with its tenant. Use a real secret manager for distributed deployments. Do not commit JSON credential maps or SQLite databases. Keys are compared in constant time where practical, but this is not comprehensive identity management.
 
-The demo enforces **120 authenticated requests per tenant per rolling minute** (HTTP 429 and `Retry-After` on excess), **200 stored documents per tenant**, **2 MB of serialized documents per tenant**, **20 documents per ingest request**, **20,000 characters per document** and **50 evaluation cases per request**. Failed quota or validation checks do not replace the live index or committed rows. Disk errors do not publish an in-memory update.
+The demo enforces **120 authenticated requests per tenant per rolling minute** (HTTP 429 and `Retry-After` on excess), **200 stored documents per tenant**, **2 MB of serialized documents per tenant**, **20 documents per ingest request**, **512 KiB per HTTP request body**, **20,000 characters per document** and **50 evaluation cases per request**. Failed quota or validation checks do not replace the live index or committed rows. Disk errors do not publish an in-memory update.
 
-**Deployment limits:** SQLite contains unencrypted user content, so use encrypted storage and strict file/volume permissions. SQLite persistence and the limiter are **single-process only**; do not run multiple workers sharing this file or rely on limiter state across replicas. This does not implement durable distributed rate limits, retries, an identity provider, per-IP login throttling, storage backups, GDPR retention/deletion workflows, request-body transport caps, tamper-resistant audit logs or a security certification. Protect API traffic using TLS and a properly configured ingress proxy. Add integration, load, resilience and penetration testing before any public production use.
+**Deployment limits:** SQLite contains unencrypted user content, so use encrypted storage and strict file/volume permissions. SQLite persistence and the limiter are **single-process only**; do not run multiple workers sharing this file or rely on limiter state across replicas. This does not implement durable distributed rate limits, retries, an identity provider, per-IP login throttling, storage backups, GDPR retention/deletion workflows, slow-client timeouts, tamper-resistant audit logs or a security certification. Protect API traffic using TLS and a properly configured ingress proxy. Add integration, load, resilience and penetration testing before any public production use.
 
 ## Example API flow
 
