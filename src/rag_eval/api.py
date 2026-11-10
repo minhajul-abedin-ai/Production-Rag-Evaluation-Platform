@@ -31,7 +31,10 @@ def health() -> dict[str, int | str]:
 @app.post("/documents")
 def add_documents(batch: DocumentBatch) -> dict[str, int]:
     engine: RAGEngine = app.state.engine
-    chunks = engine.ingest(batch.documents)
+    try:
+        chunks = engine.ingest(batch.documents)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {
         "documents": engine.document_count,
         "chunks": chunks,
