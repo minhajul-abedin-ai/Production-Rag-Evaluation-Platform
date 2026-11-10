@@ -25,7 +25,8 @@ The platform provides:
 - citation-style source tracking;
 - retrieval evaluation with Recall@K, Precision@K and MRR;
 - groundedness and context-coverage diagnostics;
-- FastAPI endpoints;
+- FastAPI endpoints protected by bearer API keys; 
+- separate per-tenant in-memory indexes (no cross-tenant document retrieval);
 - automated tests and CI;
 - Docker deployment.
 
@@ -91,6 +92,7 @@ The evaluation module measures:
 │       ├── engine.py
 │       ├── evaluation.py
 │       ├── guardrails.py
+│       ├── security.py
 │       ├── models.py
 │       └── retriever.py
 ├── tests/
@@ -109,10 +111,27 @@ The evaluation module measures:
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+export RAG_API_KEYS_JSON='{"demo":"replace-with-at-least-32-random-characters-very-long"}'
 uvicorn rag_eval.api:app --app-dir src --reload
 ```
 
 Open the API documentation at `http://127.0.0.1:8000/docs`.
+
+## Authentication and tenant isolation
+
+**Breaking API change:** all routes (including `/health`) now require a bearer API key. Missing or malformed `RAG_API_KEYS_JSON` fails closed with HTTP 503. Unauthorized requests receive 401 and do not access or create indexes.
+
+Set an environment variable before launching the server, mapping tenant IDs to distinct, high-entropy API keys of **at least 32 characters**:
+
+```bash
+export RAG_API_KEYS_JSON='{"demo":"replace-with-at-least-32-random-characters-very-long"}'
+```
+
+Generate actual keys with `python -c 'import secrets; print(secrets.token_urlsafe(32))'`; store them in a secret manager, never Git or shell history. For each authenticated request include `Authorization: Bearer <YOUR_TENANT_KEY>`. Assign different keys to different tenants: a shared key is a shared identity. Use HTTPS for remote access.
+
+Each tenant receives a distinct in-memory document index. Even identical document IDs are isolated across tenants. Configuration and index creation are synchronized, and operations on the same tenant are serialized to avoid interleaved writes. No user-selected tenant header is trusted.
+
+**Important limits:** This remains a single-process educational server, not a fully production-ready multi-tenant SaaS. Data are lost on restart and are not shared between workers. The static JSON key map requires manual rotation; there is no identity provider, quotas/rate limiting, persisted storage, auditable access control or enterprise authorization. Behind a production gateway, add resource limits, monitoring, persistent tenant-scoped storage and key rotation before serving external customers. The public docs UI is not protected against viewing endpoint schemas, but data endpoints require authentication.
 
 ## Example API flow
 
