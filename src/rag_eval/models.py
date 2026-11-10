@@ -5,16 +5,16 @@ from pydantic import BaseModel, Field
 
 class Document(BaseModel):
     doc_id: str = Field(min_length=1, max_length=200)
-    text: str = Field(min_length=1)
+    text: str = Field(min_length=1, max_length=20_000)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class DocumentBatch(BaseModel):
-    documents: list[Document] = Field(min_length=1)
+    documents: list[Document] = Field(min_length=1, max_length=20)
 
 
 class QueryRequest(BaseModel):
-    question: str = Field(min_length=2)
+    question: str = Field(min_length=2, max_length=4_000)
     top_k: int = Field(default=3, ge=1, le=20)
 
 
@@ -35,14 +35,14 @@ class QueryResponse(BaseModel):
 
 
 class EvaluationCase(BaseModel):
-    question: str
-    relevant_doc_ids: list[str] = Field(min_length=1)
+    question: str = Field(min_length=2, max_length=4_000)
+    relevant_doc_ids: list[str] = Field(min_length=1, max_length=200)
     expected_answer: str | None = None
     top_k: int = Field(default=3, ge=1, le=20)
 
 
 class EvaluationRequest(BaseModel):
-    cases: list[EvaluationCase] = Field(min_length=1)
+    cases: list[EvaluationCase] = Field(min_length=1, max_length=50)
 
 
 class EvaluationResult(BaseModel):
