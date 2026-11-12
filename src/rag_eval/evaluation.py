@@ -23,7 +23,9 @@ def retrieval_metrics(
     if not relevant:
         raise ValueError("relevant_doc_ids cannot be empty")
 
-    hits = sum(1 for doc_id in retrieved_doc_ids if doc_id in relevant)
+    # A relevant document can contribute at most one true positive. Duplicate
+    # retrievals still occupy ranks, so they remain in the precision denominator.
+    hits = len(set(retrieved_doc_ids) & relevant)
     recall = hits / len(relevant)
     precision = hits / len(retrieved_doc_ids) if retrieved_doc_ids else 0.0
 
