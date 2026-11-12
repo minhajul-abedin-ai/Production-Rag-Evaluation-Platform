@@ -167,10 +167,18 @@ Deletion removes rows from the active SQLite database but **is not secure forens
 
 ## Example API flow
 
+The API requires a tenant bearer token on **every** endpoint, including document ingestion and queries. Start the server using the authentication setup above, then set `RAG_DEMO_TOKEN` to the same secret configured for the `demo` tenant. Do not commit or paste real tokens into examples or logs.
+
+```bash
+read -r -s -p 'Demo tenant API token: ' RAG_DEMO_TOKEN; echo
+export RAG_DEMO_TOKEN
+```
+
 ### Add documents
 
 ```bash
 curl -X POST http://127.0.0.1:8000/documents \
+  -H "Authorization: Bearer ${RAG_DEMO_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"documents":[{"doc_id":"rag-1","text":"Retrieval-Augmented Generation combines retrieval with generation.","metadata":{"topic":"rag"}}]}'
 ```
@@ -179,6 +187,7 @@ curl -X POST http://127.0.0.1:8000/documents \
 
 ```bash
 curl -X POST http://127.0.0.1:8000/query \
+  -H "Authorization: Bearer ${RAG_DEMO_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"question":"What is RAG?","top_k":3}'
 ```
