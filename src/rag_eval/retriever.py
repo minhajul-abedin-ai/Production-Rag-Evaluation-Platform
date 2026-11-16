@@ -63,6 +63,10 @@ class TfidfRetriever:
         )
 
     def search(self, query: str, top_k: int = 3) -> list[SourceChunk]:
+        # Direct Python callers must get the same bounds as the HTTP query model.
+        # Negative slice endpoints otherwise silently return the wrong number of hits.
+        if isinstance(top_k, bool) or not isinstance(top_k, int) or not 1 <= top_k <= 20:
+            raise ValueError("top_k must be an integer between 1 and 20")
         if not self._index or not query.strip():
             return []
 
