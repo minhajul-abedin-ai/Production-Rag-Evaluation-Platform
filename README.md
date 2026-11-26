@@ -135,7 +135,7 @@ Generate actual keys with `python -c 'import secrets; print(secrets.token_urlsaf
 
 Each tenant receives a distinct in-memory document index. Even identical document IDs are isolated across tenants. Configuration and index creation are synchronized, and operations on the same tenant are serialized to avoid interleaved writes. No user-selected tenant header is trusted.
 
-**Important limits:** This remains a single-process educational server, not a fully production-ready multi-tenant SaaS. Data are lost on restart and are not shared between workers. The static JSON key map requires manual rotation; there is no identity provider, quotas/rate limiting, persisted storage, auditable access control or enterprise authorization. Behind a production gateway, add resource limits, monitoring, persistent tenant-scoped storage and key rotation before serving external customers. The public docs UI is not protected against viewing endpoint schemas, but data endpoints require authentication.
+**Important limits:** This remains a single-process educational server, not a fully production-ready multi-tenant SaaS. Data are lost on restart and are not shared between workers. The static JSON key map requires manual rotation; there is no identity provider, distributed quotas/rate limiting, enterprise authorization or comprehensive audit logging. Optional single-process SQLite persistence and local quotas are documented below. Behind a production gateway, add resource limits, monitoring, persistent tenant-scoped storage and key rotation before serving external customers. The public docs UI is not protected against viewing endpoint schemas, but data endpoints require authentication.
 
 ## Durable storage, quotas, and credential rotation
 
@@ -167,11 +167,18 @@ Deletion removes rows from the active SQLite database but **is not secure forens
 
 ## Example API flow
 
+Before running the examples, set `RAG_DEMO_KEY` to the **actual** secret token configured for the `demo` tenant (not the placeholder in the setup example). The variable is used only by your local shell; never commit or share its value.
+
+```bash
+read -r -s -p "Demo tenant API key: " RAG_DEMO_KEY; echo
+```
+
 ### Add documents
 
 ```bash
 curl -X POST http://127.0.0.1:8000/documents \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $RAG_DEMO_KEY" \
   -d '{"documents":[{"doc_id":"rag-1","text":"Retrieval-Augmented Generation combines retrieval with generation.","metadata":{"topic":"rag"}}]}'
 ```
 
@@ -180,6 +187,7 @@ curl -X POST http://127.0.0.1:8000/documents \
 ```bash
 curl -X POST http://127.0.0.1:8000/query \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $RAG_DEMO_KEY" \
   -d '{"question":"What is RAG?","top_k":3}'
 ```
 
