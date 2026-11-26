@@ -167,18 +167,11 @@ Deletion removes rows from the active SQLite database but **is not secure forens
 
 ## Example API flow
 
-Before running the examples, set `RAG_DEMO_KEY` to the **actual** secret token configured for the `demo` tenant (not the placeholder in the setup example). The variable is used only by your local shell; never commit or share its value.
-
-```bash
-read -r -s -p "Demo tenant API key: " RAG_DEMO_KEY; echo
-```
-
 ### Add documents
 
 ```bash
 curl -X POST http://127.0.0.1:8000/documents \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $RAG_DEMO_KEY" \
   -d '{"documents":[{"doc_id":"rag-1","text":"Retrieval-Augmented Generation combines retrieval with generation.","metadata":{"topic":"rag"}}]}'
 ```
 
@@ -187,7 +180,6 @@ curl -X POST http://127.0.0.1:8000/documents \
 ```bash
 curl -X POST http://127.0.0.1:8000/query \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $RAG_DEMO_KEY" \
   -d '{"question":"What is RAG?","top_k":3}'
 ```
 
