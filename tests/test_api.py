@@ -1,5 +1,7 @@
 """API contract tests: authenticated, tenant-isolated requests."""
 import json
+import subprocess
+import sys
 
 import pytest
 from fastapi.testclient import TestClient
@@ -59,3 +61,14 @@ def test_stopwords_only_document_returns_422_not_500():
     })
     assert response.status_code == 422
     assert test_client.get("/health", headers=HEADERS).json()["documents"] == 0
+
+
+def test_testclient_import_has_no_starlette_httpx_deprecation():
+    """Catch transport deprecation on a fresh import, not a cached module."""
+    result = subprocess.run(
+        [sys.executable, "-W", "always", "-c", "from fastapi.testclient import TestClient"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "StarletteDeprecationWarning" not in result.stderr
