@@ -66,3 +66,20 @@ def test_empty_vocabulary_on_first_ingest_does_not_save_document():
         engine.ingest([Document(doc_id="stopwords", text="the and or")])
     assert engine.document_count == 0
     assert engine.retriever.indexed_chunks == 0
+
+
+def test_direct_retriever_rejects_invalid_top_k():
+    import pytest
+
+    engine = build_engine()
+    for invalid in (0, -1, 21, True, 2.5, "3"):
+        with pytest.raises(ValueError, match="top_k"):
+            engine.retriever.search("RAG", top_k=invalid)
+
+
+def test_direct_retriever_accepts_valid_top_k_bounds():
+    engine = build_engine()
+    for valid in (1, 20):
+        results = engine.retriever.search("RAG", top_k=valid)
+        assert isinstance(results, list)
+        assert len(results) <= valid
