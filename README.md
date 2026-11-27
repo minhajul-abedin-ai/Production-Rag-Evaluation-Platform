@@ -135,7 +135,7 @@ Generate actual keys with `python -c 'import secrets; print(secrets.token_urlsaf
 
 Each tenant receives a distinct in-memory document index. Even identical document IDs are isolated across tenants. Configuration and index creation are synchronized, and operations on the same tenant are serialized to avoid interleaved writes. No user-selected tenant header is trusted.
 
-**Important limits:** This remains a single-process educational server, not a fully production-ready multi-tenant SaaS. Data are lost on restart and are not shared between workers. The static JSON key map requires manual rotation; there is no identity provider, quotas/rate limiting, persisted storage, auditable access control or enterprise authorization. Behind a production gateway, add resource limits, monitoring, persistent tenant-scoped storage and key rotation before serving external customers. The public docs UI is not protected against viewing endpoint schemas, but data endpoints require authentication.
+**Important limits:** This remains a single-process educational server, not a fully production-ready multi-tenant SaaS. Without `RAG_STORAGE_PATH`, indexed documents are lost on restart; with optional SQLite persistence, documents are reloaded on restart, but in-memory indexes and rate limits are not shared between workers. The static JSON key map requires manual rotation; there is no identity provider, distributed quotas/rate limiting, enterprise authorization or comprehensive audit logging. Optional single-process SQLite persistence and local quotas are documented below. Behind a production gateway, add resource limits, monitoring, persistent tenant-scoped storage and key rotation before serving external customers. The public docs UI is not protected against viewing endpoint schemas, but data endpoints require authentication.
 
 ## Durable storage, quotas, and credential rotation
 
@@ -167,10 +167,18 @@ Deletion removes rows from the active SQLite database but **is not secure forens
 
 ## Example API flow
 
+The API requires a tenant bearer token on **every** endpoint, including document ingestion and queries. Start the server using the authentication setup above, then set `RAG_DEMO_TOKEN` to the same secret configured for the `demo` tenant. Do not commit or paste real tokens into examples or logs.
+
+```bash
+read -r -s -p 'Demo tenant API token: ' RAG_DEMO_TOKEN; echo
+export RAG_DEMO_TOKEN
+```
+
 ### Add documents
 
 ```bash
 curl -X POST http://127.0.0.1:8000/documents \
+  -H "Authorization: Bearer ${RAG_DEMO_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"documents":[{"doc_id":"rag-1","text":"Retrieval-Augmented Generation combines retrieval with generation.","metadata":{"topic":"rag"}}]}'
 ```
@@ -179,6 +187,7 @@ curl -X POST http://127.0.0.1:8000/documents \
 
 ```bash
 curl -X POST http://127.0.0.1:8000/query \
+  -H "Authorization: Bearer ${RAG_DEMO_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"question":"What is RAG?","top_k":3}'
 ```
