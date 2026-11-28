@@ -32,4 +32,5 @@ def test_engine_module_help_has_no_runpy_warning():
     assert result.returncode == 0, result.stderr
     assert "--documents" in result.stdout
     assert "--benchmark" in result.stdout
-    assert "RuntimeWarning" not in result.stderr
+    # Target the runpy preloading regression, not unrelated runtime warnings.
+    assert "'rag_eval.engine' found in sys.modules" not in result.stderr
